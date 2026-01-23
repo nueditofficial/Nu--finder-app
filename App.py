@@ -109,6 +109,12 @@ importances = model.feature_importances_
 for i, val in enumerate(importances):
     print(f"특징 {X.columns[i]}의 중요도: {val:.4f}")# 유전자별 변이 횟수 계산 및 상위 10개 출력
 top_genes = mutation_matrix.sum().sort_values(ascending=False).head(10)
+# 111번 줄 근처 수정
+# 만약 앞에서 만든 학습 데이터 X가 변이 행렬이라면 아래와 같이 정의해줍니다.
+mutation_matrix = X 
+
+# 이제 top_genes를 계산합니다.
+top_genes = mutation_matrix.sum().sort_values(ascending=False).head(10)
 
 print("--- 가장 변이가 빈번한 유전자 Top 10 ---")
 print(top_genes)
