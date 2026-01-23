@@ -1,7 +1,8 @@
-import requests
 import streamlit as st
+import requests
 import pandas as pd
-import pandas as pd
+import matplotlib.pyplot as plt  # <--- 이 줄이 167번 에러를 해결해줍니다!
+import seaborn as sns
 
 class TripleCheckEngine:
     def __init__(self, patient_data):
