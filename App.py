@@ -63,7 +63,6 @@ params = {
     "fields": "file_id",
     "size": "5"  # 우선 샘플로 5개만 조회
 }
-
 response = requests.get("https://api.gdc.cancer.gov/files", params=params)
 file_list = response.json()["data"]["hits"]
 
@@ -78,7 +77,6 @@ if file_list:
     with open("cancer_data_sample.maf.gz", "wb") as f:
         f.write(file_response.content)
     print("다운로드 완료! 'cancer_data_sample.maf.gz' 파일이 생성되었습니다.")
-    import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
@@ -151,7 +149,7 @@ model.fit(X, y)
 
 print("\n--- AI 모델 학습 완료 ---")
 print(f"학습에 사용된 유전자 수: {len(X.columns)}개")
-import matplotlib.pyplot as plt
+
 import seaborn as sns
 
 # 상위 15개 변이 유전자 추출
