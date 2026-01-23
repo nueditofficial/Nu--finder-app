@@ -43,7 +43,7 @@ class TripleCheckEngine:
 
 # 실행 예시
 engine = TripleCheckEngine(patient_data="sample_001")
-print(engine.get_final_diagnosis())import requests
+print(engine.get_final_diagnosis())
 import json
 
 # 1. 필터 설정: 폐암(LUAD) 환자의 유전자 변이 데이터(VCF/MAF) 찾기
