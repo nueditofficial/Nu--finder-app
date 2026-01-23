@@ -76,7 +76,8 @@ if file_list:
 
     with open("cancer_data_sample.maf.gz", "wb") as f:
         f.write(file_response.content)
-    print("다운로드 완료! 'cancer_data_sample.maf.gz' 파일이 생성되었습니다.")import pandas as pd
+    print("다운로드 완료! 'cancer_data_sample.maf.gz' 파일이 생성되었습니다.")
+    import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
