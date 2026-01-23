@@ -105,6 +105,8 @@ predictions = model.predict(X_test)
 print(f"모델 정확도: {accuracy_score(y_test, predictions) * 100}%")
 
 # 5. 중요 변수 확인 (Triple Check의 핵심)
+# 108번 줄 근처에 추가
+mutation_matrix = X  # 기존에 정의된 X 데이터를 행렬 변수로 연결합니다.
 importances = model.feature_importances_
 for i, val in enumerate(importances):
     print(f"특징 {X.columns[i]}의 중요도: {val:.4f}")# 유전자별 변이 횟수 계산 및 상위 10개 출력
