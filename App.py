@@ -149,7 +149,8 @@ model = RandomForestClassifier()
 model.fit(X, y)
 
 print("\n--- AI 모델 학습 완료 ---")
-print(f"학습에 사용된 유전자 수: {len(X.columns)}개")import matplotlib.pyplot as plt
+print(f"학습에 사용된 유전자 수: {len(X.columns)}개")
+import matplotlib.pyplot as plt
 import seaborn as sns
 
 # 상위 15개 변이 유전자 추출
