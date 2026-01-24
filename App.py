@@ -192,3 +192,42 @@ if uploaded_file:
     # 여기서 우리가 만든 분석 로직(SNV, CNV 등)을 실행합니다.
     st.success("데이터 분석 완료!")
     # 시각화 그래프 출력
+import streamlit as st
+import pandas as pd
+import time
+
+# 1. 화면 설정 (제목 등은 맨 위에 한 번만!)
+st.title("Nu-Finder Oncology AI")
+st.write("유전자 데이터를 업로드하면 Triple Check 분석을 시작합니다.")
+
+# 2. 분석 결과 및 가이드를 보여주는 함수 (정의만 해둠)
+def show_action_guide():
+    st.markdown("---") 
+    st.markdown("### 🚀 Nu-Solution Path")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("💊 맞춤형 항암제 추천")
+        drug_data = pd.DataFrame({
+            '약물명': ['Pembrolizumab', 'Olaparib', 'Gefitinib'],
+            '반응 가능성': [92, 45, 12]
+        })
+        st.bar_chart(drug_data.set_index('약물명'))
+
+    with col2:
+        st.subheader("✂️ NuEdit 편집 타겟")
+        st.success("Target: Chromosome 17:41243452")
+        st.code("Sequence: GATCG...TTAGC", language='text')
+
+# 3. 파일 업로더 (이것도 딱 한 번만!)
+uploaded_file = st.file_uploader("MAF 또는 CSV 파일 선택", type=['csv', 'maf'])
+
+# 4. 파일이 올라왔을 때만 실행되는 로직
+if uploaded_file is not None:
+    with st.spinner('Nu-Logics AI가 유전체를 정밀 분석 중입니다...'):
+        time.sleep(2) # 분석 시뮬레이션
+    
+    st.success("분석 완료!")
+    
+    # 여기서 결과 함수를 호출!
+    show_action_guide()
