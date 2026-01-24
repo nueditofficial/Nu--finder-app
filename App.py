@@ -185,13 +185,6 @@ plt.show()
 st.title("Nu-Finder Oncology AI")
 st.write("유전자 데이터를 업로드하면 Triple Check 분석을 시작합니다.")
 
-# 파일 업로더 추가
-uploaded_file = st.file_uploader("MAF 또는 CSV 파일 선택")
-
-if uploaded_file:
-    # 여기서 우리가 만든 분석 로직(SNV, CNV 등)을 실행합니다.
-    st.success("데이터 분석 완료!")
-    # 시각화 그래프 출력
 import streamlit as st
 import pandas as pd
 import time
