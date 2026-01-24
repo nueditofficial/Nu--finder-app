@@ -221,3 +221,33 @@ if uploaded_file is not None:
     
     # 여기서 결과 함수를 호출!
     show_action_guide()
+from Bio import SeqIO # NCBI 서열 파일을 읽기 위한 도구
+import io
+
+# --- NCBI 파일 처리 함수 ---
+def parse_ncbi_file(uploaded_file):
+    # 업로드된 파일을 텍스트 형식으로 읽기
+    stringio = io.StringIO(uploaded_file.getvalue().decode("utf-8"))
+    
+    # FASTA 형식을 리스트로 변환
+    records = []
+    for record in SeqIO.parse(stringio, "fasta"):
+        records.append({
+            "ID": record.id,
+            "Description": record.description[:50] + "...",
+            "Sequence_Length": len(record.seq),
+            "Sequence_Snippet": str(record.seq[:20]) + "..."
+        })
+    return pd.DataFrame(records)
+
+# --- 앱 메인 로직 수정 ---
+uploaded_file = st.file_uploader("NCBI 데이터 업로드 (.fasta, .vcf)", type=['fasta', 'vcf', 'txt'])
+
+if uploaded_file is not None:
+    if uploaded_file.name.endswith('.fasta'):
+        df = parse_ncbi_file(uploaded_file)
+        st.write("🧬 NCBI 서열 분석 결과:")
+        st.dataframe(df) # 화면에 깔끔한 표로 출력
+        
+        # 여기서 이제 우리의 show_action_guide()를 호출!
+        show_action_guide()
