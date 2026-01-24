@@ -4,4 +4,7 @@ pandas
 matplotlib
 scikit-learn
 seaborn
-pip install biopython
+streamlit
+pandas
+biopython
+
