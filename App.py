@@ -189,9 +189,6 @@ import streamlit as st
 import pandas as pd
 import time
 
-# 1. 화면 설정 (제목 등은 맨 위에 한 번만!)
-st.title("Nu-Finder Oncology AI")
-st.write("유전자 데이터를 업로드하면 Triple Check 분석을 시작합니다.")
 
 # 2. 분석 결과 및 가이드를 보여주는 함수 (정의만 해둠)
 def show_action_guide():
