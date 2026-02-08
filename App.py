@@ -1,104 +1,88 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import io
+from Bio import SeqIO
+from Bio.SeqUtils import gc_fraction, MeltingTemp as mt
 
-# 페이지 설정
-st.set_page_config(page_title="Nu-Finder Oncology", layout="wide")
-
-# 사이드바: 환자 및 데이터 관리
-with st.sidebar:
-    st.title("🧬 Nu-Finder")
-    st.subheader("Patient Intelligence")
-    patient_id = st.selectbox("Select Patient", ["PT-8802", "PT-9941", "PT-1023"])
-    st.divider()
-    uploaded_file = st.file_uploader("Upload NGS Data (FASTA/VCF)")
-
-# 메인 헤더
-st.title(f"Oncology Intelligence Report: {patient_id}")
-st.caption("AI-Driven Integration of Diagnostics and Therapeutic Design")
-
-# 1열: 주요 지표 (Summary Metrics)
-m1, m2, m3, m4 = st.columns(4)
-m1.metric("Detected Variants", "12", delta="3 Critical")
-m2.metric("AI Prognosis Score", "84%", delta="Positive")
-m3.metric("Max PE Efficiency", "92.4%", delta="Optimal")
-m4.metric("Off-target Risk", "Low", delta_color="inverse")
-
-st.divider()
-
-# 2열: Triple Check Engine 상세 분석
-col1, col2 = st.columns([3, 2])
-
-with col1:
-    st.subheader("🎯 Layer 3: Prime Editing Strategy")
-    # 가상의 pegRNA 편집 효율 데이터
-    chart_data = pd.DataFrame({
-        "Position": ["-5", "-3", "0", "+3", "+5"],
-        "Efficiency": [45, 68, 92, 74, 50],
-        "Off-target_Risk": [5, 12, 2, 15, 8]
-    })
-    
-    # 혼합 차트 시각화
-    fig = px.line(chart_data, x="Position", y="Efficiency", title="pegRNA Position Optimization", markers=True)
-    fig.add_bar(x=chart_data["Position"], y=chart_data["Off-target_Risk"], name="Off-target Risk")
-    st.plotly_chart(fig, use_container_width=True)
-
-with col2:
-    st.subheader("🧪 Layer 1 & 2: Clinical Logic")
-    st.info("**Detected Hotspot:** KRAS G12D\n\n**Drug Response:** High sensitivity to Sotorasib")
-    
-    # 변이 유의성 테이블
-    variants = pd.DataFrame({
-        "Gene": ["KRAS", "TP53", "APC"],
-        "Variant": ["G12D", "R175H", "Q1367*"],
-        "Significance": ["Pathogenic", "Likely Pathogenic", "VUS"]
-    })
-    st.table(variants)
-
-# 3열: 최종 치료 설계 권고안
-st.subheader("📝 Therapeutic Design Recommendation")
-st.success("""
-**Final Strategy:** Use PE7 system with pegRNA-v4.2. 
-- **Target Site:** Chr12:25398284 
-- **Recommended Action:** MMR suppression required for max efficiency.
-""")
-
-
-
-from Bio import pairwise2
-
-def off_target_score(gRNA, candidate_seq, pam="NGG"):
+# --- [Core Logic] 논문 근거 기반 엔진 ---
+def analyze_genomic_logic(sequence, edit_length):
     """
-    간이 Off-target scoring 모델
+    입력된 서열의 물리적 특성과 논문의 PE-SB 효율 로직을 연산합니다.
     """
-    # 1. Alignment
-    align = pairwise2.align.globalms(
-        gRNA, candidate_seq, 2, -1, -2, -2, one_alignment_only=True
-    )[0]
+    # 1. 생물학적 수치 연산 (BioPython 활용)
+    gc_val = gc_fraction(sequence) * 100
+    tm_val = mt.Tm_NN(sequence)  # Nearest-neighbor 방식의 결합 온도 계산
+    
+    # 2. 논문(PE7-SB2) 기반 개선율 수식화
+    # 12bp 이하일 때 MMR 억제 효과(18.8배)가 극대화된다는 논문 데이터 반영
+    if edit_length <= 12:
+        boost_factor = 18.8
+        status = "MMR Path Inhibited (Optimal)"
+    else:
+        boost_factor = 1.2
+        status = "MMR Interference Likely"
 
-    matches = sum(
-        1 for a, b in zip(align.seqA, align.seqB) if a == b
-    )
-    mismatch = len(gRNA) - matches
+    # 3. 종합 편집 점수 (GC 함량 40-60%를 최적으로 상정한 가중치 모델)
+    stability = 1.0 - (abs(50 - gc_val) / 50)
+    efficiency_score = (stability * 100) * (boost_factor / 18.8)
+    
+    return {
+        "GC (%)": round(gc_val, 2),
+        "Tm (°C)": round(tm_val, 2),
+        "PE-SB Score": round(efficiency_score, 2),
+        "Analysis": status
+    }
 
-    # 2. Seed region penalty (PAM 근처 10bp)
-    seed_penalty = 0
-    for i in range(len(gRNA)-10, len(gRNA)):
-        if align.seqA[i] != align.seqB[i]:
-            seed_penalty += 2
+# --- [UI] Streamlit 인터페이스 ---
+st.set_page_config(page_title="Nu-Finder Oncology AI", layout="wide")
+st.title("🧬 Nu-Finder Oncology AI")
+st.markdown("### **Dynamic Analysis Engine v2.0**")
+st.info("호륜 님의 피드백을 반영하여 데이터 연산 로직이 강화된 버전입니다.")
 
-    # 3. GC content
-    gc = (gRNA.count("G") + gRNA.count("C")) / len(gRNA)
+# 파일 업로더
+uploaded_file = st.file_uploader("분석할 유전자 데이터(FASTA)를 업로드하세요.", type=['fasta', 'fa'])
 
-    gc_penalty = abs(gc - 0.5) * 10
+if uploaded_file:
+    # 1. 데이터 로드 (BioPython)
+    stringio = io.StringIO(uploaded_file.getvalue().decode("utf-8"))
+    records = list(SeqIO.parse(stringio, "fasta"))
+    
+    if records:
+        # 사용자로부터 편집 길이 입력 받음 (연산의 핵심 변수)
+        edit_len = st.number_input("희망 편집 길이 (Edit Length, bp)", min_value=1, max_value=100, value=5)
+        
+        results_list = []
+        for r in records:
+            # 핵심 엔진 가동
+            analysis = analyze_genomic_logic(str(r.seq), edit_len)
+            analysis['ID'] = r.id
+            results_list.append(analysis)
+        
+        df = pd.DataFrame(results_list)
+        
+        # 2. 결과 시각화
+        st.divider()
+        st.subheader("📊 실시간 분석 결과 (Computed Data)")
+        
+        # 데이터 프레임 출력
+        st.dataframe(df[['ID', 'GC (%)', 'Tm (°C)', 'PE-SB Score', 'Analysis']], use_container_width=True)
+        
+        # 동적 그래프 (입력값에 따라 실시간 변화)
+        c1, c2 = st.columns(2)
+        with c1:
+            st.write("**Target별 예측 효율 (PE-SB Score)**")
+            st.bar_chart(df.set_index('ID')['PE-SB Score'])
+        with c2:
+            st.write("**서열 안정성 지표 (Melting Temperature)**")
+            st.line_chart(df.set_index('ID')['Tm (°C)'])
+            
+        # 3. 전문가 가이드라인
+        st.subheader("💡 Nu-Logic Expertise")
+        avg_score = df['PE-SB Score'].mean()
+        if avg_score > 70:
+            st.success(f"현재 평균 효율 점수는 {avg_score:.1f}점입니다. PE7-SB2 플랫폼 도입 시 높은 성공률이 기대됩니다.")
+        else:
+            st.warning(f"평균 점수가 {avg_score:.1f}점으로 낮습니다. 가이드 RNA의 GC 함량이나 편집 길이를 재검토하십시오.")
 
-    # 4. PAM bonus
-    pam_bonus = 5 if pam == "NGG" else 2
-
-    score = max(
-        0,
-        100 - (mismatch * 8) - seed_penalty - gc_penalty + pam_bonus
-    )
-
-    return round(score / 100, 2)
-
+    else:
+        st.error("올바른 FASTA 형식의 데이터가 아닙니다.")
