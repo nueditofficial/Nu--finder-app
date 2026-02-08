@@ -3,134 +3,49 @@ import pandas as pd
 from Bio import SeqIO
 from Bio.SeqUtils import gc_fraction
 import io
-import math
 
-# ===============================
-# 1. Cancer Hotspot Knowledge Base
-# ===============================
-CANCER_HOTSPOTS = {
-    "TP53": ["CGT", "GGC"],   # 대표적 missense hotspot 예시
-    "KRAS": ["GGT"],          # codon 12
-    "BRAF": ["TAC"]           # V600E (단순화)
-}
+# 1. 핵심 설정 (불필요한 클래스/함수 래핑 제거)
+HOTSPOTS = {"TP53": ["CGT", "GGC"], "KRAS": ["GGT"], "BRAF": ["TAC"]}
 
-# ===============================
-# 2. Prime Editing Efficiency Model
-# (논문 컨셉: GC 최적 = 50%, Gaussian decay)
-# ===============================
-def predict_pe_efficiency(gc):
-    """
-    Non-linear PE efficiency prediction
-    """
-    optimal_gc = 50
-    sigma = 10  # 허용 폭
-    efficiency = 90 * math.exp(-((gc - optimal_gc) ** 2) / (2 * sigma ** 2))
-    return round(efficiency, 2)
+def get_efficiency(gc):
+    """GC 50%에서 최적화되는 PE 효율 산출 (단순화된 수식)"""
+    return round(90 * (2.718 ** -(((gc - 50) ** 2) / 200)), 2)
 
-# ===============================
-# 3. Oncology Core Logic Engine
-# ===============================
-def analyze_oncology_logic(seq):
-    # [A] GC content
-    gc_val = gc_fraction(seq) * 100
+# 2. 메인 UI 및 로직
+st.title("Nu-Finder: Genome Analyzer")
 
-    # [B] Hotspot-based mutation scan
-    detected_genes = []
-    for gene, motifs in CANCER_HOTSPOTS.items():
-        for m in motifs:
-            if m in seq:
-                detected_genes.append(gene)
-                break
-
-    mutation_status = "Detected" if detected_genes else "Clean"
-
-    # [C] Prime Editing efficiency prediction
-    pe_eff = predict_pe_efficiency(gc_val)
-
-    return {
-        "GC_Content": round(gc_val, 2),
-        "Mutation_Status": mutation_status,
-        "Affected_Genes": ", ".join(detected_genes) if detected_genes else "-",
-        "Predicted_PE_Efficiency": pe_eff
-    }
-
-# ===============================
-# 4. Professional Visualization Layer
-# ===============================
-def display_professional_results(df):
-    st.markdown("### 🧬 Nu-Finder Oncology Intelligence Report")
-
-    results = []
-    for _, row in df.iterrows():
-        logic_res = analyze_oncology_logic(row["Full_Seq"])
-        results.append(logic_res)
-
-    res_df = pd.concat([df, pd.DataFrame(results)], axis=1)
-
-    # --- Metrics Dashboard ---
-    col1, col2, col3 = st.columns(3)
-    col1.metric(
-        "Avg. PE Efficiency",
-        f"{res_df['Predicted_PE_Efficiency'].mean():.1f}%",
-        delta="Model-based"
-    )
-    col2.metric(
-        "Mutation-Positive Targets",
-        len(res_df[res_df["Mutation_Status"] == "Detected"])
-    )
-    col3.metric(
-        "Avg. GC Content",
-        f"{res_df['GC_Content'].mean():.1f}%"
-    )
-
-    st.divider()
-
-    # --- Strategy Output ---
-    st.subheader("🎯 Precision Editing Strategy")
-    for _, row in res_df.iterrows():
-        if row["Mutation_Status"] == "Detected":
-            st.warning(
-                f"**Target {row['ID']}** | "
-                f"Affected Gene(s): {row['Affected_Genes']} | "
-                f"Predicted PE Efficiency: **{row['Predicted_PE_Efficiency']}%**"
-            )
-            st.caption(
-                "Recommendation: PE7 + SB2 적용, PAM 인접 pegRNA 설계 및 "
-                "MMR suppression 고려"
-            )
-        else:
-            st.success(
-                f"**Target {row['ID']}**: Pathogenic hotspot 미검출"
-            )
-
-# ===============================
-# 5. Streamlit UI
-# ===============================
-st.title("Nu-Finder Oncology AI")
-st.caption("Precision Genome Editing Intelligence Engine")
-
-file = st.file_uploader(
-    "Upload Genomic Data (FASTA or CSV)",
-    type=["fasta", "csv"]
-)
+file = st.file_uploader("Upload FASTA or CSV", type=["fasta", "csv"])
 
 if file:
+    # 데이터 로드 (FASTA/CSV 통합 처리)
     if file.name.endswith(".fasta"):
-        stringio = io.StringIO(file.getvalue().decode("utf-8"))
-        records = [
-            {
-                "ID": r.id,
-                "Length": len(r.seq),
-                "Full_Seq": str(r.seq)
-            }
-            for r in SeqIO.parse(stringio, "fasta")
-        ]
-        df = pd.DataFrame(records)
-
-    elif file.name.endswith(".csv"):
+        recs = SeqIO.parse(io.StringIO(file.getvalue().decode()), "fasta")
+        df = pd.DataFrame([{"ID": r.id, "Seq": str(r.seq)} for r in recs])
+    else:
         df = pd.read_csv(file)
-        if "Full_Seq" not in df.columns or "ID" not in df.columns:
-            st.error("CSV must contain 'ID' and 'Full_Seq' columns.")
-            st.stop()
 
-    display_professional_results(df)
+    # 핵심 분석 (Pandas Vectorization 활용으로 속도 향상)
+    df["GC"] = df["Seq"].apply(lambda x: gc_fraction(x) * 100)
+    df["PE_Eff"] = df["GC"].apply(get_efficiency)
+    
+    # Gene 매칭 (복잡한 루프 대신 단순 포함 여부 확인)
+    def detect_genes(seq):
+        found = [gene for gene, motifs in HOTSPOTS.items() if any(m in seq for m in motifs)]
+        return ", ".join(found) if found else "None"
+    
+    df["Genes"] = df["Seq"].apply(detect_genes)
+
+    # 3. 결과 요약 및 출력
+    cols = st.columns(3)
+    cols[0].metric("Avg Efficiency", f"{df['PE_Eff'].mean():.1f}%")
+    cols[1].metric("Targets Found", len(df[df["Genes"] != "None"]))
+    cols[2].metric("Avg GC", f"{df['GC'].mean():.1f}%")
+
+    st.dataframe(df[["ID", "GC", "Genes", "PE_Eff"]], use_container_width=True)
+
+    # 탐지된 타겟만 간결하게 표시
+    hits = df[df["Genes"] != "None"]
+    if not hits.empty:
+        st.subheader("🎯 Actionable Targets")
+        for _, r in hits.iterrows():
+            st.error(f"**{r['ID']}** ({r['Genes']}): {r['PE_Eff']}% efficiency. Need MMR suppression.")
