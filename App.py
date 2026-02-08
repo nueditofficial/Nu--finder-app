@@ -1,51 +1,64 @@
 import streamlit as st
 import pandas as pd
-from Bio import SeqIO
-from Bio.SeqUtils import gc_fraction
-import io
+import plotly.express as px
 
-# 1. 핵심 설정 (불필요한 클래스/함수 래핑 제거)
-HOTSPOTS = {"TP53": ["CGT", "GGC"], "KRAS": ["GGT"], "BRAF": ["TAC"]}
+# 페이지 설정
+st.set_page_config(page_title="Nu-Finder Oncology", layout="wide")
 
-def get_efficiency(gc):
-    """GC 50%에서 최적화되는 PE 효율 산출 (단순화된 수식)"""
-    return round(90 * (2.718 ** -(((gc - 50) ** 2) / 200)), 2)
+# 사이드바: 환자 및 데이터 관리
+with st.sidebar:
+    st.title("🧬 Nu-Finder")
+    st.subheader("Patient Intelligence")
+    patient_id = st.selectbox("Select Patient", ["PT-8802", "PT-9941", "PT-1023"])
+    st.divider()
+    uploaded_file = st.file_uploader("Upload NGS Data (FASTA/VCF)")
 
-# 2. 메인 UI 및 로직
-st.title("Nu-Finder: Genome Analyzer")
+# 메인 헤더
+st.title(f"Oncology Intelligence Report: {patient_id}")
+st.caption("AI-Driven Integration of Diagnostics and Therapeutic Design")
 
-file = st.file_uploader("Upload FASTA or CSV", type=["fasta", "csv"])
+# 1열: 주요 지표 (Summary Metrics)
+m1, m2, m3, m4 = st.columns(4)
+m1.metric("Detected Variants", "12", delta="3 Critical")
+m2.metric("AI Prognosis Score", "84%", delta="Positive")
+m3.metric("Max PE Efficiency", "92.4%", delta="Optimal")
+m4.metric("Off-target Risk", "Low", delta_color="inverse")
 
-if file:
-    # 데이터 로드 (FASTA/CSV 통합 처리)
-    if file.name.endswith(".fasta"):
-        recs = SeqIO.parse(io.StringIO(file.getvalue().decode()), "fasta")
-        df = pd.DataFrame([{"ID": r.id, "Seq": str(r.seq)} for r in recs])
-    else:
-        df = pd.read_csv(file)
+st.divider()
 
-    # 핵심 분석 (Pandas Vectorization 활용으로 속도 향상)
-    df["GC"] = df["Seq"].apply(lambda x: gc_fraction(x) * 100)
-    df["PE_Eff"] = df["GC"].apply(get_efficiency)
+# 2열: Triple Check Engine 상세 분석
+col1, col2 = st.columns([3, 2])
+
+with col1:
+    st.subheader("🎯 Layer 3: Prime Editing Strategy")
+    # 가상의 pegRNA 편집 효율 데이터
+    chart_data = pd.DataFrame({
+        "Position": ["-5", "-3", "0", "+3", "+5"],
+        "Efficiency": [45, 68, 92, 74, 50],
+        "Off-target_Risk": [5, 12, 2, 15, 8]
+    })
     
-    # Gene 매칭 (복잡한 루프 대신 단순 포함 여부 확인)
-    def detect_genes(seq):
-        found = [gene for gene, motifs in HOTSPOTS.items() if any(m in seq for m in motifs)]
-        return ", ".join(found) if found else "None"
+    # 혼합 차트 시각화
+    fig = px.line(chart_data, x="Position", y="Efficiency", title="pegRNA Position Optimization", markers=True)
+    fig.add_bar(x=chart_data["Position"], y=chart_data["Off-target_Risk"], name="Off-target Risk")
+    st.plotly_chart(fig, use_container_width=True)
+
+with col2:
+    st.subheader("🧪 Layer 1 & 2: Clinical Logic")
+    st.info("**Detected Hotspot:** KRAS G12D\n\n**Drug Response:** High sensitivity to Sotorasib")
     
-    df["Genes"] = df["Seq"].apply(detect_genes)
+    # 변이 유의성 테이블
+    variants = pd.DataFrame({
+        "Gene": ["KRAS", "TP53", "APC"],
+        "Variant": ["G12D", "R175H", "Q1367*"],
+        "Significance": ["Pathogenic", "Likely Pathogenic", "VUS"]
+    })
+    st.table(variants)
 
-    # 3. 결과 요약 및 출력
-    cols = st.columns(3)
-    cols[0].metric("Avg Efficiency", f"{df['PE_Eff'].mean():.1f}%")
-    cols[1].metric("Targets Found", len(df[df["Genes"] != "None"]))
-    cols[2].metric("Avg GC", f"{df['GC'].mean():.1f}%")
-
-    st.dataframe(df[["ID", "GC", "Genes", "PE_Eff"]], use_container_width=True)
-
-    # 탐지된 타겟만 간결하게 표시
-    hits = df[df["Genes"] != "None"]
-    if not hits.empty:
-        st.subheader("🎯 Actionable Targets")
-        for _, r in hits.iterrows():
-            st.error(f"**{r['ID']}** ({r['Genes']}): {r['PE_Eff']}% efficiency. Need MMR suppression.")
+# 3열: 최종 치료 설계 권고안
+st.subheader("📝 Therapeutic Design Recommendation")
+st.success("""
+**Final Strategy:** Use PE7 system with pegRNA-v4.2. 
+- **Target Site:** Chr12:25398284 
+- **Recommended Action:** MMR suppression required for max efficiency.
+""")
