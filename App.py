@@ -62,3 +62,43 @@ st.success("""
 - **Target Site:** Chr12:25398284 
 - **Recommended Action:** MMR suppression required for max efficiency.
 """)
+
+
+
+from Bio import pairwise2
+
+def off_target_score(gRNA, candidate_seq, pam="NGG"):
+    """
+    간이 Off-target scoring 모델
+    """
+    # 1. Alignment
+    align = pairwise2.align.globalms(
+        gRNA, candidate_seq, 2, -1, -2, -2, one_alignment_only=True
+    )[0]
+
+    matches = sum(
+        1 for a, b in zip(align.seqA, align.seqB) if a == b
+    )
+    mismatch = len(gRNA) - matches
+
+    # 2. Seed region penalty (PAM 근처 10bp)
+    seed_penalty = 0
+    for i in range(len(gRNA)-10, len(gRNA)):
+        if align.seqA[i] != align.seqB[i]:
+            seed_penalty += 2
+
+    # 3. GC content
+    gc = (gRNA.count("G") + gRNA.count("C")) / len(gRNA)
+
+    gc_penalty = abs(gc - 0.5) * 10
+
+    # 4. PAM bonus
+    pam_bonus = 5 if pam == "NGG" else 2
+
+    score = max(
+        0,
+        100 - (mismatch * 8) - seed_penalty - gc_penalty + pam_bonus
+    )
+
+    return round(score / 100, 2)
+
