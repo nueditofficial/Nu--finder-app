@@ -7,6 +7,60 @@ import time
 import streamlit as st
 import pandas as pd  # 데이터를 표로 만들기 위해 필요합니다
 
+
+import streamlit as st
+import pandas as pd
+
+# [핵심 로직] 논문 기반 MMR 리스크 및 PE7-SB2 개선 효과 계산 함수
+def calculate_pe_efficiency(ref_seq, edit_seq):
+    # 1. 편집 거리(Edit Distance) 계산
+    edit_length = abs(len(ref_seq) - len(edit_seq))
+    if edit_length == 0: # 치환(Substitution)인 경우
+        edit_length = sum(1 for a, b in zip(ref_seq, edit_seq) if a != b)
+
+    # 2. 논문 근거: 12bp 미만에서 MMR 억제 효과(PE-SB)가 극대화됨
+    mmr_risk = "높음 (High)" if edit_length <= 12 else "낮음 (Low)"
+    
+    # 3. 개선 배율 예측 (논문 수치 인용)
+    # HeLa 세포 기준 PEmax 대비 18.8배, PE7 대비 2.5배 향상 로직
+    improvement_factor = 18.8 if edit_length <= 12 else 1.2
+    
+    return {
+        "편집 길이": f"{edit_length} bp",
+        "MMR 간섭 리스크": mmr_risk,
+        "PE7-SB2 예상 개선율": f"{improvement_factor} 배",
+        "권장 기술": "PE7-SB2 (AI 단백질 융합형)" if edit_length <= 12 else "Standard PE"
+    }
+
+# --- Streamlit UI 구성 ---
+st.header("🧬 Nu-Finder: PE-SB Efficiency Predictor")
+st.info("최신 AI 설계 단백질(MLH1-SB) 논문 로직이 적용된 엔진입니다.")
+
+col1, col2 = st.columns(2)
+with col1:
+    ref = st.text_input("표준 서열(Reference)", "GCTAGCTAGCTA")
+with col2:
+    edit = st.text_input("편집 희망 서열(Edited)", "GCTAGCGGGCTA")
+
+if st.button("분석 실행"):
+    # 분석 수행
+    analysis = calculate_pe_efficiency(ref, edit)
+    
+    # 결과 시각화
+    st.subheader("📊 기술적 분석 결과")
+    
+    # 메트릭 카드로 강조
+    c1, c2, c3 = st.columns(3)
+    c1.metric("편집 규모", analysis["편집 길이"])
+    c2.metric("MMR 리스크", analysis["MMR 간섭 리스크"], delta="-MMR Effect", delta_color="inverse")
+    c3.metric("예상 효율 상승", analysis["PE7-SB2 예상 개선율"])
+
+    # 논문 기반 가이드라인 출력
+    if "높음" in analysis["MMR 간섭 리스크"]:
+        st.success(f"✅ **전문가 제언:** 현재 편집 규모는 {analysis['편집 길이']}로, RFdiffusion으로 설계된 **MLH1-SB(소형 결합 단백질)** 사용 시 효율이 극대화됩니다.")
+    else:
+        st.warning("⚠️ **참고:** 12bp 이상의 긴 편집은 MMR 억제 효과가 제한적일 수 있으므로 추가적인 RT(역전사효소) 고도화가 필요합니다.")
+
 # 1. 분석 함수 정의 (파일 상단에 위치)
 def analyze_mutations(ref_seq, user_seq):
     mutations = []
