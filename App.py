@@ -4,7 +4,44 @@ from Bio import SeqIO
 import io
 import time
 
-st.set_page_config(page_title="NuEdit | Nu-Finder", page_icon="🧬")
+import streamlit as st
+import pandas as pd  # 데이터를 표로 만들기 위해 필요합니다
+
+# 1. 분석 함수 정의 (파일 상단에 위치)
+def analyze_mutations(ref_seq, user_seq):
+    mutations = []
+    # 두 서열을 비교하여 다른 부분만 추출
+    for i, (r, u) in enumerate(zip(ref_seq, user_seq)):
+        if r != u:
+            mutations.append({
+                "위치(Position)": i + 1,
+                "표준(Ref)": r,
+                "변이(Alt)": u,
+                "유형(Type)": "SNP (단일 염기 변이)"
+            })
+    return mutations
+
+# 2. 메인 화면 구성
+st.title("🧬 Nu-Finder: 유전체 변이 정밀 분석")
+
+# 서열 입력창 (예시 데이터)
+ref_input = st.text_area("표준 서열(Reference) 입력", "ATGC...") 
+user_input = st.text_area("환자 서열(Patient) 입력", "ATGG...")
+
+if st.button("변이 분석 시작"):
+    # 함수 실행
+    result = analyze_mutations(ref_input, user_input)
+    
+    if result:
+        st.subheader("📊 분석 결과 리포트")
+        # 3. 분석 결과를 Pandas 데이터프레임으로 변환하여 표로 출력
+        df = pd.DataFrame(result)
+        st.table(df) # 또는 st.dataframe(df)
+        
+        st.success(f"총 {len(result)}개의 유의미한 변이가 발견되었습니다.")
+    else:
+        st.info("변이가 발견되지 않았습니다. 표준 서열과 일치합니다.")
+        st.set_page_config(page_title="NuEdit | Nu-Finder", page_icon="🧬")
 
 st.title("Nu-Finder Oncology AI")
 st.write("실제 데이터 수치에 반응하는 **Dynamic Analysis** 모드입니다.")
