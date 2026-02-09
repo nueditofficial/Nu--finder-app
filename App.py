@@ -37,7 +37,7 @@ def run_nu_engine(seq_record, edit_len):
 # --- [UI] 사용자 인터페이스 ---
 st.set_page_config(page_title="Nu-Finder Oncology AI", layout="wide")
 st.title("🧬 Nu-Finder Oncology AI v2.0")
-st.write("실제 유전체 연산 엔진이 탑재된 **Research-Ready** 모드입니다.")
+
 
 # 분석 변수 설정
 with st.sidebar:
