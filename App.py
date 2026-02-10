@@ -20,7 +20,15 @@ demo_choice = st.sidebar.selectbox(
 )
 
 # 프리셋 데이터 매핑
-if demo_choice == "TP53 R175H (Pan-cancer)":
+
+
+# [수정 후]
+if demo_choice == "TP53":
+    target_seq = "CCTGCCTTCG..." # 서열만 가져옴
+    
+# 최종 출력은 항상 함수를 거치게 함
+result = analyze_thermodynamics(target_seq, na_conc, mg_conc)
+st.metric("Efficiency", f"{result['dg'] * -10}%") # 연산 결과에 따라 변함
     target_seq = "CCTGCCTTCG" # 실제 타겟 주변 서열로 교체
     variant_info = "VCV000012345"
     st.sidebar.success("Loaded: TP53 Mutation Data")
