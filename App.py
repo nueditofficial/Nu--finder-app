@@ -12,6 +12,24 @@ st.markdown("---")
 
 # 2. 사이드바: 입력 및 병원성 검증 (Step 1)
 with st.sidebar:
+    # 사이드바에 시연용 프리셋 추가
+st.sidebar.header("🚀 Quick Demo Scenarios")
+demo_choice = st.sidebar.selectbox(
+    "Select Cancer Mutation",
+    ["Manual Input", "TP53 R175H (Pan-cancer)", "EGFR L858R (Lung Cancer)", "BRCA1 185delAG (Breast Cancer)"]
+)
+
+# 프리셋 데이터 매핑
+if demo_choice == "TP53 R175H (Pan-cancer)":
+    target_seq = "CCTGCCTTCG" # 실제 타겟 주변 서열로 교체
+    variant_info = "VCV000012345"
+    st.sidebar.success("Loaded: TP53 Mutation Data")
+elif demo_choice == "EGFR L858R (Lung Cancer)":
+    target_seq = "AGCATGTCAAG"
+    variant_info = "VCV000016582"
+elif demo_choice == "BRCA1 185delAG (Breast Cancer)":
+    target_seq = "GCAGTTGAA"
+    variant_info = "VCV000003456"
     st.header("🔍 Mutation Input")
     gene_name = st.text_input("Gene Name", value="TP53")
     variant_info = st.text_input("Variant (ClinVar ID)", value="R175H")
@@ -90,21 +108,3 @@ st.markdown("---")
 st.subheader("💡 Nu-Logic Recommendation")
 st.success(f"현재 {target_seq} 서열은 {tm:.1f}°C에서 안정적인 결합을 보입니다. "
            f"배상수 교수님의 MMR 억제 이론에 따라, PBS 길이를 13nt로 조정하여 효율을 5.2% 더 높일 것을 권장합니다.")
-# 사이드바에 시연용 프리셋 추가
-st.sidebar.header("🚀 Quick Demo Scenarios")
-demo_choice = st.sidebar.selectbox(
-    "Select Cancer Mutation",
-    ["Manual Input", "TP53 R175H (Pan-cancer)", "EGFR L858R (Lung Cancer)", "BRCA1 185delAG (Breast Cancer)"]
-)
-
-# 프리셋 데이터 매핑
-if demo_choice == "TP53 R175H (Pan-cancer)":
-    target_seq = "CCTGCCTTCG" # 실제 타겟 주변 서열로 교체
-    variant_info = "VCV000012345"
-    st.sidebar.success("Loaded: TP53 Mutation Data")
-elif demo_choice == "EGFR L858R (Lung Cancer)":
-    target_seq = "AGCATGTCAAG"
-    variant_info = "VCV000016582"
-elif demo_choice == "BRCA1 185delAG (Breast Cancer)":
-    target_seq = "GCAGTTGAA"
-    variant_info = "VCV000003456"
