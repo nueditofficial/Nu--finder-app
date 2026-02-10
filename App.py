@@ -32,9 +32,26 @@ with col1:
     target_seq = st.text_input("Target Sequence (pegRNA binding site)", value="GATGCTCGACGCT")
     
     # 열역학 계산 로직
-    res = mt.Tm_NN(Seq(target_seq), Na=na_conc, Mg=mg_conc, return_num=True)
-    dh, ds, dg = res[1], res[2], res[3]
+   # 기존 35라인 부근을 아래 코드로 덮어쓰기 하세요.
+try:
+    # 1. Tm 값 계산 (가장 기본)
     tm = mt.Tm_NN(Seq(target_seq), Na=na_conc, Mg=mg_conc)
+    
+    # 2. 상세 열역학 값 계산 (안전한 방식으로 분리)
+    # BioPython 버전에 따라 인자명이 다를 수 있어 기본값으로 먼저 계산합니다.
+    res = mt.Tm_NN(Seq(target_seq), Na=na_conc, Mg=mg_conc, return_num=True)
+    
+    # res가 튜플로 반환되므로 안전하게 인덱스로 접근합니다.
+    # (Tm, dH, dS, dG) 순서입니다.
+    tm_val = res[0]
+    dh = res[1]
+    ds = res[2]
+    dg = res[3]
+
+except Exception as e:
+    st.error(f"계산 중 오류가 발생했습니다: {e}")
+    tm, dg, dh, ds = 0, 0, 0, 0
+  
 
     # 에너지 히트맵 시각화 (Mockup)
     seq_list = list(target_seq)
